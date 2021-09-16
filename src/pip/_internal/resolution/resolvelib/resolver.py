@@ -90,7 +90,7 @@ class Resolver(BaseResolver):
             reporter,
         )
 
-        def _maybe_find_candidates(req) -> None:
+        def _maybe_find_candidates(req: Requirement) -> None:
             ident = provider.identify(req)
             try:
                 self.factory._finder.find_all_candidates(ident)
