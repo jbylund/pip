@@ -1,6 +1,7 @@
 import functools
 import logging
 import os
+from multiprocessing.pool import ThreadPool
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
 
 from pip._vendor.packaging.utils import canonicalize_name
@@ -88,6 +89,17 @@ class Resolver(BaseResolver):
             provider,
             reporter,
         )
+
+        def _maybe_find_candidates(req) -> None:
+            ident = provider.identify(req)
+            try:
+                self.factory._finder.find_all_candidates(ident)
+            except AttributeError:
+                pass
+
+        with ThreadPool() as tp:
+            for _ in tp.imap_unordered(_maybe_find_candidates, collected.requirements):
+                pass
 
         try:
             try_to_avoid_resolution_too_deep = 2000000
