@@ -54,7 +54,7 @@ class Resolver(BaseResolver):
     ):
         super().__init__()
         assert upgrade_strategy in self._allowed_strategies
-
+        self.finder = finder
         self.factory = Factory(
             finder=finder,
             preparer=preparer,
@@ -90,13 +90,8 @@ class Resolver(BaseResolver):
             reporter,
         )
 
-        if LACK_SEM_OPEN:
-            # if a working threading implementation unavailable do nothing
-            pass
-        else:
-            # otherwise greedily call/consume _finder.find_all_candidates in parallel
-            # in order to populate the lru cache such that future calls don't block on
-            # networking
+        if LACK_SEM_OPEN is False:
+
             def _maybe_find_candidates(req: Requirement) -> None:
                 ident = provider.identify(req)
                 try:
