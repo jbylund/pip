@@ -1,7 +1,6 @@
 import functools
 import logging
 import os
-from multiprocessing.pool import ThreadPool
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
 
 from pip._vendor.packaging.utils import canonicalize_name
@@ -22,6 +21,7 @@ from pip._internal.resolution.resolvelib.reporter import (
 )
 from pip._internal.utils.deprecation import deprecated
 from pip._internal.utils.filetypes import is_archive_file
+from pip._internal.utils.parallel import LACK_SEM_OPEN, map_multithread
 
 from .base import Candidate, Requirement
 from .factory import Factory
@@ -90,15 +90,21 @@ class Resolver(BaseResolver):
             reporter,
         )
 
-        def _maybe_find_candidates(req: Requirement) -> None:
-            ident = provider.identify(req)
-            try:
-                self.factory._finder.find_all_candidates(ident)
-            except AttributeError:
-                pass
+        if LACK_SEM_OPEN:
+            # if a working threading implementation unavailable do nothing
+            pass
+        else:
+            # otherwise greedily call/consume _finder.find_all_candidates in parallel
+            # in order to populate the lru cache such that future calls don't block on
+            # networking
+            def _maybe_find_candidates(req: Requirement) -> None:
+                ident = provider.identify(req)
+                try:
+                    self.factory._finder.find_all_candidates(ident)
+                except AttributeError:
+                    pass
 
-        with ThreadPool() as tp:
-            for _ in tp.imap_unordered(_maybe_find_candidates, collected.requirements):
+            for _ in map_multithread(_maybe_find_candidates, collected.requirements):
                 pass
 
         try:
