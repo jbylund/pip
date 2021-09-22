@@ -46,6 +46,7 @@ from pip._internal.req.req_install import (
 from pip._internal.resolution.base import InstallRequirementProvider
 from pip._internal.utils.compatibility_tags import get_supported
 from pip._internal.utils.hashes import Hashes
+from pip._internal.utils.parallel import LACK_SEM_OPEN, map_multithread
 from pip._internal.utils.virtualenv import running_under_virtualenv
 
 from .base import Candidate, CandidateVersion, Constraint, Requirement
@@ -343,6 +344,21 @@ class Factory:
             )
             if candidate:
                 yield candidate
+
+    def pre_find_all(self, project_names: Iterator[str]) -> None:
+        if LACK_SEM_OPEN:
+            return
+        if not hasattr(self._finder.find_all_candidates, "cache_info"):
+            return
+
+        def _maybe_find_candidates(project_name: str) -> None:
+            try:
+                self._finder.find_all_candidates(project_name)
+            except AttributeError:
+                pass
+
+        for _ in map_multithread(_maybe_find_candidates, project_names):
+            pass
 
     def find_candidates(
         self,

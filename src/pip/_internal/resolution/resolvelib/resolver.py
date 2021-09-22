@@ -21,7 +21,6 @@ from pip._internal.resolution.resolvelib.reporter import (
 )
 from pip._internal.utils.deprecation import deprecated
 from pip._internal.utils.filetypes import is_archive_file
-from pip._internal.utils.parallel import LACK_SEM_OPEN, map_multithread
 
 from .base import Candidate, Requirement
 from .factory import Factory
@@ -90,17 +89,7 @@ class Resolver(BaseResolver):
             reporter,
         )
 
-        if LACK_SEM_OPEN is False:
-
-            def _maybe_find_candidates(req: Requirement) -> None:
-                ident = provider.identify(req)
-                try:
-                    self.factory._finder.find_all_candidates(ident)
-                except AttributeError:
-                    pass
-
-            for _ in map_multithread(_maybe_find_candidates, collected.requirements):
-                pass
+        self.factory.pre_find_all(provider.identify(r) for r in collected.requirements)
 
         try:
             try_to_avoid_resolution_too_deep = 2000000
