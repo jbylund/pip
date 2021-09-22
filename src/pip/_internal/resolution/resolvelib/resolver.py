@@ -54,7 +54,6 @@ class Resolver(BaseResolver):
     ):
         super().__init__()
         assert upgrade_strategy in self._allowed_strategies
-        self.finder = finder
         self.factory = Factory(
             finder=finder,
             preparer=preparer,
@@ -90,17 +89,9 @@ class Resolver(BaseResolver):
             reporter,
         )
 
-        if LACK_SEM_OPEN is False:
-
-            def _maybe_find_candidates(req: Requirement) -> None:
-                ident = provider.identify(req)
-                try:
-                    self.factory._finder.find_all_candidates(ident)
-                except AttributeError:
-                    pass
-
-            for _ in map_multithread(_maybe_find_candidates, collected.requirements):
-                pass
+        self.factory.populate_find_all_candidates_cache(
+            provider.identify(r) for r in collected.requirements
+        )
 
         try:
             try_to_avoid_resolution_too_deep = 2000000

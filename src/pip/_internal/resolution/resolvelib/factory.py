@@ -24,6 +24,9 @@ from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import NormalizedName, canonicalize_name
 from pip._vendor.resolvelib import ResolutionImpossible
 
+
+from pip._internal.utils.parallel import LACK_SEM_OPEN, map_multithread
+
 from pip._internal.cache import CacheEntry, WheelCache
 from pip._internal.exceptions import (
     DistributionNotFound,
@@ -35,6 +38,7 @@ from pip._internal.exceptions import (
 )
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import BaseDistribution, get_default_environment
+from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.operations.prepare import RequirementPreparer
@@ -343,6 +347,23 @@ class Factory:
             )
             if candidate:
                 yield candidate
+
+    @functools.lru_cache(maxsize=None)
+    def find_all_candidates(self, project_name: str) -> List[InstallationCandidate]:
+        return self._finder.find_all_candidates(project_name)
+
+    if LACK_SEM_OPEN:
+        def populate_find_all_candidates_cache(self, project_names: Iterator[str]):
+            pass
+    else:
+        def populate_find_all_candidates_cache(self, project_names: Iterator[str]):
+            def _maybe_find_candidates(proj_name: str) -> None:
+                try:
+                    self.find_all_candidates(proj_name)
+                except AttributeError:
+                    pass
+            for _ in map_multithread(_maybe_find_candidates, project_names):
+                pass
 
     def find_candidates(
         self,
