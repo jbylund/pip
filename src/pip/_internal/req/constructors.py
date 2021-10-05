@@ -382,6 +382,7 @@ def install_req_from_line(
 def get_or_create_requirement(req_string):
     return Requirement(req_string)
 
+@functools.lru_cache(maxsize=None)
 def install_req_from_req_string(
     req_string: str,
     comes_from: Optional[InstallRequirement] = None,
