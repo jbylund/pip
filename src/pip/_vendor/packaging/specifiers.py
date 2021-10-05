@@ -112,6 +112,8 @@ class _IndividualSpecifier(BaseSpecifier):
         # Store whether or not this Specifier should accept prereleases
         self._prereleases = prereleases
 
+        self._canonical_spec = self._spec[0], canonicalize_version(self._spec[1])
+
     def __repr__(self) -> str:
         pre = (
             f", prereleases={self.prereleases!r}"
@@ -123,10 +125,6 @@ class _IndividualSpecifier(BaseSpecifier):
 
     def __str__(self) -> str:
         return "{}{}".format(*self._spec)
-
-    @property
-    def _canonical_spec(self) -> Tuple[str, str]:
-        return self._spec[0], canonicalize_version(self._spec[1])
 
     def __hash__(self) -> int:
         return hash(self._canonical_spec)
@@ -183,6 +181,7 @@ class _IndividualSpecifier(BaseSpecifier):
     def __contains__(self, item: str) -> bool:
         return self.contains(item)
 
+    @functools.lru_cache(maxsize=None)
     def contains(
         self, item: UnparsedVersion, prereleases: Optional[bool] = None
     ) -> bool:
@@ -772,7 +771,10 @@ class SpecifierSet(BaseSpecifier):
         # given version is contained within all of them.
         # Note: This use of all() here means that an empty set of specifiers
         #       will always return True, this is an explicit design decision.
-        return all(s.contains(item, prereleases=prereleases) for s in self._specs)
+        for s in self._specs:
+            if not s.contains(item, prereleases=prereleases):
+                return False
+        return True
 
     def filter(
         self, iterable: Iterable[VersionTypeVar], prereleases: Optional[bool] = None

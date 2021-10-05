@@ -152,4 +152,7 @@ class FoundCandidates(SequenceCandidate):
     def __bool__(self) -> bool:
         if self._prefers_installed and self._installed:
             return True
-        return any(self)
+        for i in self:
+            if i:
+                return True
+        return False

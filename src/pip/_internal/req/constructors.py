@@ -11,6 +11,7 @@ InstallRequirement.
 import logging
 import os
 import re
+import functools
 from typing import Any, Dict, Optional, Set, Tuple, Union
 
 from pip._vendor.packaging.markers import Marker
@@ -377,6 +378,9 @@ def install_req_from_line(
         user_supplied=user_supplied,
     )
 
+@functools.lru_cache(maxsize=None)
+def get_or_create_requirement(req_string):
+    return Requirement(req_string)
 
 def install_req_from_req_string(
     req_string: str,
@@ -386,7 +390,7 @@ def install_req_from_req_string(
     user_supplied: bool = False,
 ) -> InstallRequirement:
     try:
-        req = Requirement(req_string)
+        req = get_or_create_requirement(req_string)
     except InvalidRequirement:
         raise InstallationError(f"Invalid requirement: '{req_string}'")
 

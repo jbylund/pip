@@ -194,4 +194,8 @@ class PipProvider(_ProviderBase):
 
     def get_dependencies(self, candidate: Candidate) -> Sequence[Requirement]:
         with_requires = not self._ignore_dependencies
-        return [r for r in candidate.iter_dependencies(with_requires) if r is not None]
+        ans = []
+        for r in candidate.iter_dependencies(with_requires):
+            if r is not None:
+                ans.append(r)
+        return ans

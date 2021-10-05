@@ -121,26 +121,29 @@ class Requirement:
         self.extras: Set[str] = set(req.extras.asList() if req.extras else [])
         self.specifier: SpecifierSet = SpecifierSet(req.specifier)
         self.marker: TOptional[Marker] = req.marker if req.marker else None
+        self._str_rep = None
 
     def __str__(self) -> str:
-        parts: List[str] = [self.name]
+        if self._str_rep is None:
+            parts: List[str] = [self.name]
 
-        if self.extras:
-            formatted_extras = ",".join(sorted(self.extras))
-            parts.append(f"[{formatted_extras}]")
+            if self.extras:
+                formatted_extras = ",".join(sorted(self.extras))
+                parts.append(f"[{formatted_extras}]")
 
-        if self.specifier:
-            parts.append(str(self.specifier))
+            if self.specifier:
+                parts.append(str(self.specifier))
 
-        if self.url:
-            parts.append(f"@ {self.url}")
+            if self.url:
+                parts.append(f"@ {self.url}")
+                if self.marker:
+                    parts.append(" ")
+
             if self.marker:
-                parts.append(" ")
+                parts.append(f"; {self.marker}")
 
-        if self.marker:
-            parts.append(f"; {self.marker}")
-
-        return "".join(parts)
+            self._str_rep = "".join(parts)
+        return self._str_rep
 
     def __repr__(self) -> str:
         return f"<Requirement('{self}')>"

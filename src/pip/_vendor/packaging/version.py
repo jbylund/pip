@@ -3,10 +3,11 @@
 # for complete details.
 
 import collections
+import functools
 import itertools
 import re
 import warnings
-from typing import Callable, Iterator, List, Optional, SupportsInt, Tuple, Union
+from typing import Callable, Dict, Iterator, List, Optional, SupportsInt, Tuple, Union
 
 from ._structures import Infinity, InfinityType, NegativeInfinity, NegativeInfinityType
 
@@ -61,7 +62,11 @@ class _BaseVersion:
     _key: Union[CmpKey, LegacyCmpKey]
 
     def __hash__(self) -> int:
-        return hash(self._key)
+        try:
+            return self._cached_hash
+        except AttributeError:
+            self._cached_hash = hash(self._key)
+        return self._cached_hash
 
     # Please keep the duplicated `isinstance` check
     # in the six comparisons hereunder
@@ -257,8 +262,19 @@ VERSION_PATTERN = r"""
 class Version(_BaseVersion):
 
     _regex = re.compile(r"^\s*" + VERSION_PATTERN + r"\s*$", re.VERBOSE | re.IGNORECASE)
+    _obj_cache: Dict[str, "Version"] = {}
+
+
+    def __new__(cls, version: str) -> "Version":
+        try:
+            cached = cls._obj_cache[version]
+        except KeyError:
+            cached = super(Version, cls).__new__(cls)
+        return cached
 
     def __init__(self, version: str) -> None:
+        if version in Version._obj_cache:
+            return
 
         # Validate the version and parse it into pieces
         match = self._regex.search(version)
@@ -286,37 +302,41 @@ class Version(_BaseVersion):
             self._version.dev,
             self._version.local,
         )
+        self._str_rep = None
+        Version._obj_cache[version] = self
 
     def __repr__(self) -> str:
         return f"<Version('{self}')>"
 
     def __str__(self) -> str:
-        parts = []
+        if self._str_rep is None:
+            parts = []
 
-        # Epoch
-        if self.epoch != 0:
-            parts.append(f"{self.epoch}!")
+            # Epoch
+            if self.epoch != 0:
+                parts.append(f"{self.epoch}!")
 
-        # Release segment
-        parts.append(".".join(str(x) for x in self.release))
+            # Release segment
+            parts.append(".".join(str(x) for x in self.release))
 
-        # Pre-release
-        if self.pre is not None:
-            parts.append("".join(str(x) for x in self.pre))
+            # Pre-release
+            if self.pre is not None:
+                parts.append("".join(str(x) for x in self.pre))
 
-        # Post-release
-        if self.post is not None:
-            parts.append(f".post{self.post}")
+            # Post-release
+            if self.post is not None:
+                parts.append(f".post{self.post}")
 
-        # Development release
-        if self.dev is not None:
-            parts.append(f".dev{self.dev}")
+            # Development release
+            if self.dev is not None:
+                parts.append(f".dev{self.dev}")
 
-        # Local version segment
-        if self.local is not None:
-            parts.append(f"+{self.local}")
+            # Local version segment
+            if self.local is not None:
+                parts.append(f"+{self.local}")
 
-        return "".join(parts)
+            self._str_rep = "".join(parts)
+        return self._str_rep
 
     @property
     def epoch(self) -> int:

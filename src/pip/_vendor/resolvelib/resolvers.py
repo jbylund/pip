@@ -218,12 +218,9 @@ class Resolution(object):
             # always pass under normal circumstances, but in the case of a
             # faulty provider, we will raise an error to notify the implementer
             # to fix find_matches() and/or is_satisfied_by().
-            satisfied = all(
-                self._p.is_satisfied_by(requirement=r, candidate=candidate)
-                for r in criterion.iter_requirement()
-            )
-            if not satisfied:
-                raise InconsistentCandidate(candidate, criterion)
+            for r in criterion.iter_requirement():
+                if not self._p.is_satisfied_by(requirement=r, candidate=candidate):
+                    raise InconsistentCandidate(candidate, criterion)
 
             self._r.pinning(candidate=candidate)
             self.state.criteria.update(criteria)

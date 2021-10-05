@@ -1,4 +1,5 @@
 import logging
+import functools
 from email.message import Message
 from email.parser import FeedParser
 from typing import Optional, Tuple
@@ -36,6 +37,7 @@ def check_requires_python(
     return python_version in requires_python_specifier
 
 
+@functools.lru_cache(maxsize=None)
 def get_metadata(dist: Distribution) -> Message:
     """
     :raises NoneMetadataError: if the distribution reports `has_metadata()`

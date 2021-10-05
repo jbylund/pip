@@ -85,6 +85,9 @@ class CollectedRootRequirements(NamedTuple):
     constraints: Dict[str, Constraint]
     user_requested: Dict[str, int]
 
+@functools.lru_cache(maxsize=None)
+def get_or_create_requirement(identifier):
+    return PackagingRequirement(identifier)
 
 class Factory:
     def __init__(
@@ -365,7 +368,7 @@ class Factory:
         # If the current identifier contains extras, add explicit candidates
         # from entries from extra-less identifier.
         with contextlib.suppress(InvalidRequirement):
-            parsed_requirement = PackagingRequirement(identifier)
+            parsed_requirement = get_or_create_requirement(identifier)
             explicit_candidates.update(
                 self._iter_explicit_candidates_from_base(
                     requirements.get(parsed_requirement.name, ()),
