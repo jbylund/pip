@@ -3,6 +3,7 @@
 # for complete details.
 
 import re
+import functools
 from typing import FrozenSet, NewType, Tuple, Union, cast
 
 from .tags import Tag, parse_tag
@@ -28,7 +29,7 @@ _canonicalize_regex = re.compile(r"[-_.]+")
 # PEP 427: The build number must start with a digit.
 _build_tag_regex = re.compile(r"(\d+)(.*)")
 
-
+@functools.lru_cache(maxsize=None)
 def canonicalize_name(name: str) -> NormalizedName:
     # This is taken from PEP 503.
     value = _canonicalize_regex.sub("-", name).lower()
