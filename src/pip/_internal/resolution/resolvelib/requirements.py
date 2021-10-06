@@ -44,6 +44,7 @@ class SpecifierRequirement(Requirement):
         assert ireq.link is None, "This is a link, not a specifier"
         self._ireq = ireq
         self._extras = frozenset(ireq.extras)
+        self._cached_name = None
 
     def __str__(self) -> str:
         return str(self._ireq.req)
@@ -61,7 +62,9 @@ class SpecifierRequirement(Requirement):
 
     @property
     def name(self) -> str:
-        return format_name(self.project_name, self._extras)
+        if self._cached_name is None:
+            self._cached_name = format_name(self.project_name, self._extras)
+        return self._cached_name
 
     def format_for_error(self) -> str:
 
