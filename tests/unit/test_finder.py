@@ -558,3 +558,23 @@ def test_find_all_candidates_find_links_and_index(data: TestData) -> None:
     versions = finder.find_all_candidates("simple")
     # first the find-links versions then the page versions
     assert [str(v.version) for v in versions] == ["3.0", "2.0", "1.0", "1.0"]
+
+def test_finder_caching(data: TestData) -> None:
+    finder = make_test_finder(
+        find_links=[data.find_links],
+        index_urls=[data.index_url("simple")],
+    )
+    def get_findall_cacheinfo():
+        cacheinfo = finder.find_all_candidates.cache_info()
+        return {k: getattr(cacheinfo, k) for k in ['currsize', 'hits', 'misses']}
+
+    # empty before any calls
+    assert get_findall_cacheinfo() == {"currsize": 0, "hits": 0, "misses": 0}
+
+    # first findall is a miss
+    finder.find_all_candidates("simple")
+    assert get_findall_cacheinfo() == {"currsize": 1, "hits": 0, "misses": 1}
+
+    # find best following a find all is a hit
+    finder.find_best_candidate("simple")
+    assert get_findall_cacheinfo() == {"currsize": 1, "hits": 1, "misses": 1}
