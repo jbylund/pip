@@ -491,6 +491,6 @@ class Resolver(AbstractResolver):
             return _build_result(state)
         finally:
             profile.disable()
-            elapsed = time.time() - before
+            elapsed = int(time.time() - before + 0.4)
             outpath = f"{os.getcwd()}/pip.{int(time.time())}.{elapsed}.prof"
             profile.dump_stats(outpath)
