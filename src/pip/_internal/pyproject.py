@@ -9,7 +9,13 @@ from pip._internal.exceptions import InstallationError
 
 
 def _is_list_of_str(obj: Any) -> bool:
-    return isinstance(obj, list) and all(isinstance(item, str) for item in obj)
+    if isinstance(obj, list):
+        for itm in obj:
+            if not isinstance(itm, str):
+                break
+        else:
+            return True
+    return False
 
 
 def make_pyproject_path(unpacked_source_directory: str) -> str:

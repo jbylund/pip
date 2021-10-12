@@ -772,7 +772,12 @@ class SpecifierSet(BaseSpecifier):
         # given version is contained within all of them.
         # Note: This use of all() here means that an empty set of specifiers
         #       will always return True, this is an explicit design decision.
-        return all(s.contains(item, prereleases=prereleases) for s in self._specs)
+        for s in self._specs:
+            if s.contains(item, prereleases=prereleases):
+                pass
+            else:
+                return False
+        return True
 
     def filter(
         self, iterable: Iterable[VersionTypeVar], prereleases: Optional[bool] = None

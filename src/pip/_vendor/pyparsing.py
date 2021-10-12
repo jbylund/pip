@@ -1558,8 +1558,9 @@ class ParserElement(object):
         if list(fns) == [None,]:
             self.parseAction = []
         else:
-            if not all(callable(fn) for fn in fns):
-                raise TypeError("parse actions must be callable")
+            for fn in fns:
+                if not(callable(fn)):
+                    raise TypeError("parse actions must be callable")
             self.parseAction = list(map(_trim_arity, list(fns)))
             self.callDuringTry = kwargs.get("callDuringTry", False)
         return self

@@ -30,7 +30,12 @@ class FormatControl:
         if self.__slots__ != other.__slots__:
             return False
 
-        return all(getattr(self, k) == getattr(other, k) for k in self.__slots__)
+        for k in self.__slots__:
+            if getattr(self, k) == getattr(other, k):
+                pass
+            else:
+                return False
+        return True
 
     def __repr__(self) -> str:
         return "{}({}, {})".format(
