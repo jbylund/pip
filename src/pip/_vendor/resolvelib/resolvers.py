@@ -1,5 +1,8 @@
 import collections
 import operator
+import cProfile
+import os
+import time
 
 from .providers import AbstractResolver
 from .structs import DirectedGraph, IteratorMapping, build_iter_view
@@ -478,6 +481,15 @@ class Resolver(AbstractResolver):
             dependency, but you can try to resolve this by increasing the
             `max_rounds` argument.
         """
-        resolution = Resolution(self.provider, self.reporter)
-        state = resolution.resolve(requirements, max_rounds=max_rounds)
-        return _build_result(state)
+        profile = cProfile.Profile()
+        before = time.time()
+        profile.enable()
+        try:
+            resolution = Resolution(self.provider, self.reporter)
+            state = resolution.resolve(requirements, max_rounds=max_rounds)
+            return _build_result(state)
+        finally:
+            profile.disable()
+            elapsed = time.time() - before
+            outpath = f"{os.getcwd()}/pip.{int(time.time())}.{elapsed}.prof"
+            profile.dump_stats(outpath)
