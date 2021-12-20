@@ -7,6 +7,7 @@ from typing import (
     Iterator,
     Mapping,
     Sequence,
+    Set,
     TypeVar,
     Union,
 )
@@ -110,7 +111,7 @@ class PipProvider(_ProviderBase):
         resolutions: Mapping[str, Candidate],
         candidates: Mapping[str, Iterator[Candidate]],
         information: Mapping[str, Iterable["PreferenceInformation"]],
-        backtrack_causes: Sequence["PreferenceInformation"],
+        backtrack_causes: Set[str],
     ) -> "Preference":
         """Produce a sort key for given requirement based on preference.
 
@@ -174,7 +175,7 @@ class PipProvider(_ProviderBase):
         # Prefer the causes of backtracking on the assumption that the problem
         # resolving the dependency tree is related to the failures that caused
         # the backtracking
-        backtrack_cause = self.is_backtrack_cause(identifier, backtrack_causes)
+        backtrack_cause = identifier in backtrack_causes
 
         return (
             not requires_python,
@@ -236,13 +237,7 @@ class PipProvider(_ProviderBase):
         with_requires = not self._ignore_dependencies
         return [r for r in candidate.iter_dependencies(with_requires) if r is not None]
 
-    @staticmethod
-    def is_backtrack_cause(
-        identifier: str, backtrack_causes: Sequence["PreferenceInformation"]
-    ) -> bool:
-        for backtrack_cause in backtrack_causes:
-            if identifier == backtrack_cause.requirement.name:
-                return True
-            if backtrack_cause.parent and identifier == backtrack_cause.parent.name:
-                return True
-        return False
+    def prepare_causes(self, causes):
+        return {c.requirement.name for c in causes} | {
+            c.parent.name for c in causes if c.parent
+        }
